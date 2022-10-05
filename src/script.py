@@ -4,6 +4,9 @@ import numpy as np
 import matplotlib.pyplot as plt
 import seaborn as sns
 import datetime
+import math
+
+from sklearn.cluster import KMeans
 # %%
 df = pd.read_csv('../BancoDeDados.csv')
 # %%
@@ -32,9 +35,7 @@ def plot_perc(st,dados):
     
 # %%
 plot_perc('estado_cliente', df)
-# %%
 plot_perc('estado_vendedor', df)
-# %%
 plot_perc('pagamento_tipo', df)
 # %%
 df_olist = df[['id_unico_cliente','id_cliente','horario_pedido','item_id','preco']]
@@ -45,5 +46,40 @@ df_compra['DataMaxCompra'] = pd.to_datetime(df_compra['DataMaxCompra'])
 # Recencia
 df_compra['Recencia'] = (df_compra['DataMaxCompra'].max() - df_compra['DataMaxCompra']).dt.days
 df_usuario = pd.merge(df_olist,df_compra[['id_unico_cliente','Recencia']], on = 'id_unico_cliente')
-df_usuario
+# %%
+def calculate_wcss(data):
+  wcss = []
+  for k in range(1,10):
+    kmeans = KMeans(n_clusters = k)
+    kmeans.fit(X = data)
+    data['Clusters']= kmeans.labels_
+    wcss.append(kmeans.inertia_)
+  return wcss
+# %%
+df_recencia = df_usuario[['Recencia']]
+soma_quadrados = calculate_wcss(df_recencia)
+# %%
+plt.figure(figsize= (10,5))
+plt.plot(soma_quadrados)
+plt.xlabel('Número de clusters')
+plt.show()
+# %%
+def numero_otimo_clusters(wcss):
+  x1, y1 = 2, wcss[0]
+  x2, y2 = 20, wcss[len(wcss) - 1]
+  
+  distances = []
+  
+  for i in range(len(wcss)):
+    x0 = i + 2
+    y0 = wcss[i]
+    
+    numerator = abs((y2 - y1) * x0 - (x2 - x1) * y0 + x2*y1 - y2*x1)
+    denominator = math.sqrt((y2 - y1)**2 + (x2 - x1)**2)
+    distances.append(numerator / denominator)
+  return distances.index(max(distances)) + 2 
+# %%
+#recuperando o melhor n para o k-means
+n = numero_otimo_clusters(soma_quadrados)
+n
 # %%
