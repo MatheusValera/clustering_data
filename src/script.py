@@ -113,3 +113,14 @@ df_usuario = pd.merge(df_usuario,df_receita, on = 'id_unico_cliente')
 df_receita = df_usuario[['Receita']]
 df_usuario['ReceitaCluster'] = kmeans.fit_predict(df_receita)
 df_usuario = ordenador_cluster('ReceitaCluster', 'Receita', df_usuario)
+# %%
+df_final = df_usuario[['id_unico_cliente','Recencia','RecenciaCluster','Frequencia','FrequenciaCluster','Receita','ReceitaCluster']]
+df_final.tail()
+# %%
+df_final['Pontuacao'] = df_usuario['RecenciaCluster'] + df_usuario['FrequenciaCluster'] + df_usuario['ReceitaCluster']
+df_final['Segmento'] = 'Inativo'
+df_final.loc[df_final['Pontuacao']  >= 1, 'Segmento'] = 'Business'
+df_final.loc[df_final['Pontuacao']  >= 3, 'Segmento'] = 'Master'
+df_final.loc[df_final['Pontuacao']  >= 5, 'Segmento'] = 'Premium'
+df_final.to_csv('RFM.csv')
+# %%
