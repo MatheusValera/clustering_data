@@ -77,9 +77,64 @@ def numero_otimo_clusters(wcss):
     numerator = abs((y2 - y1) * x0 - (x2 - x1) * y0 + x2*y1 - y2*x1)
     denominator = math.sqrt((y2 - y1)**2 + (x2 - x1)**2)
     distances.append(numerator / denominator)
+    
   return distances.index(max(distances)) + 2 
 # %%
 #recuperando o melhor n para o k-means
 n = numero_otimo_clusters(soma_quadrados)
-n
+# %%
+kmeans = KMeans(n_clusters= n)
+df_usuario['RecenciaCluster'] = kmeans.fit_predict(df_recencia)
+# %%
+def ordenador_cluster(cluster, target, df):
+  agrupado_por_cluster = df.groupby(cluster)[target].mean().reset_index()
+  agrupado_por_cluster_ordenado = agrupado_por_cluster.sort_values(by = target, ascending = False).reset_index(drop = True)
+  agrupado_por_cluster_ordenado['index'] = agrupado_por_cluster_ordenado.index
+  juntando_cluster = pd.merge(df, agrupado_por_cluster_ordenado[[cluster,'index']], on= cluster)
+  removendo_dados = juntando_cluster.drop([cluster], axis = 1)
+  df_final = removendo_dados.rename(columns = {'index' : cluster})
+  return df_final
+# %%
+
+df_frequencia = df.groupby('id_unico_cliente').pedido_aprovado.count().reset_index()
+df_frequencia.columns = ['id_unico_cliente','Frequencia']
+
+df_usuario = ordenador_cluster('RecenciaCluster', 'Recencia', df_usuario)
+df_usuario = pd.merge(df_usuario,df_frequencia, on = 'id_unico_cliente')
+df_frequencia = df_usuario[['Frequencia']]
+df_usuario['FrequenciaCluster'] = kmeans.fit_predict(df_frequencia)
+df_usuario = ordenador_cluster('FrequenciaCluster', 'Frequencia', df_usuario)
+
+
+# %%
+df_receita = df.groupby('id_unico_cliente').pagamento_valor.sum().reset_index()
+df_receita.columns = ['id_unico_cliente','Receita']
+df_usuario = pd.merge(df_usuario,df_receita, on = 'id_unico_cliente')
+df_receita = df_usuario[['Receita']]
+df_usuario['ReceitaCluster'] = kmeans.fit_predict(df_receita)
+df_usuario = ordenador_cluster('ReceitaCluster', 'Receita', df_usuario)
+# %%
+df_final = df_usuario[['id_unico_cliente','Recencia','RecenciaCluster','Frequencia','FrequenciaCluster','Receita','ReceitaCluster']]
+df_final.tail()
+# %%
+df_final['Pontuacao'] = df_usuario['RecenciaCluster'] + df_usuario['FrequenciaCluster'] + df_usuario['ReceitaCluster']
+df_final['Segmento'] = 'Inativo'
+df_final.loc[df_final['Pontuacao']  >= 1, 'Segmento'] = 'Business'
+df_final.loc[df_final['Pontuacao']  >= 3, 'Segmento'] = 'Master'
+df_final.loc[df_final['Pontuacao']  >= 5, 'Segmento'] = 'Premium'
+df_final.to_csv('RFM.csv')
+# %%
+def plot_segmento(x, y, data):
+  sns.set(palette = 'muted', color_codes = True, style = 'whitegrid')
+  plt.figure(figsize = (7,5))
+  sns.scatterplot(x = x, y = y, hue = 'Segmento', data = data, size = 'Segmento', sizes = (50,150), size_order = ['Premium', 'Master', 'Business', 'Inativo'])
+  plt.show()
+# %%
+plot_segmento('Recencia','Frequencia', df_final)
+# %%
+plot_segmento('Frequencia','Receita', df_final)
+# %%
+plot_segmento('Recencia','Receita', df_final)
+# %%
+sns.countplot(df_final['Segmento'])
 # %%
