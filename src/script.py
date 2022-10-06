@@ -124,3 +124,17 @@ df_final.loc[df_final['Pontuacao']  >= 3, 'Segmento'] = 'Master'
 df_final.loc[df_final['Pontuacao']  >= 5, 'Segmento'] = 'Premium'
 df_final.to_csv('RFM.csv')
 # %%
+def plot_segmento(x, y, data):
+  sns.set(palette = 'muted', color_codes = True, style = 'whitegrid')
+  plt.figure(figsize = (7,5))
+  sns.scatterplot(x = x, y = y, hue = 'Segmento', data = data, size = 'Segmento', sizes = (50,150), size_order = ['Premium', 'Master', 'Business', 'Inativo'])
+  plt.show()
+# %%
+plot_segmento('Recencia','Frequencia', df_final)
+# %%
+plot_segmento('Frequencia','Receita', df_final)
+# %%
+plot_segmento('Recencia','Receita', df_final)
+# %%
+sns.countplot(df_final['Segmento'])
+# %%
