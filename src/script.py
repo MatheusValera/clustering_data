@@ -95,4 +95,12 @@ def ordenador_cluster(cluster, target, df):
   df_final = removendo_dados.rename(columns = {'index' : cluster})
   return df_final
 # %%
+
+df_frequencia = df.groupby('id_unico_cliente').pedido_aprovado.count().reset_index()
+df_frequencia.columns = ['id_unico_cliente','Frequencia']
+
 df_usuario = ordenador_cluster('RecenciaCluster', 'Recencia', df_usuario)
+df_usuario = pd.merge(df_usuario,df_frequencia, on = 'id_unico_cliente')
+df_frequencia = df_usuario[['Frequencia']]
+df_usuario['FrequenciaCluster'] = kmeans.fit_predict(df_frequencia)
+df_usuario = ordenador_cluster('FrequenciaCluster', 'Frequencia', df_usuario)
