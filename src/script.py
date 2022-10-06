@@ -77,9 +77,22 @@ def numero_otimo_clusters(wcss):
     numerator = abs((y2 - y1) * x0 - (x2 - x1) * y0 + x2*y1 - y2*x1)
     denominator = math.sqrt((y2 - y1)**2 + (x2 - x1)**2)
     distances.append(numerator / denominator)
+    
   return distances.index(max(distances)) + 2 
 # %%
 #recuperando o melhor n para o k-means
 n = numero_otimo_clusters(soma_quadrados)
-n
 # %%
+kmeans = KMeans(n_clusters= n)
+df_usuario['RecenciaCluster'] = kmeans.fit_predict(df_recencia)
+# %%
+def ordenador_cluster(cluster, target, df):
+  agrupado_por_cluster = df.groupby(cluster)[target].mean().reset_index()
+  agrupado_por_cluster_ordenado = agrupado_por_cluster.sort_values(by = target, ascending = False).reset_index(drop = True)
+  agrupado_por_cluster_ordenado['index'] = agrupado_por_cluster_ordenado.index
+  juntando_cluster = pd.merge(df, agrupado_por_cluster_ordenado[[cluster,'index']], on= cluster)
+  removendo_dados = juntando_cluster.drop([cluster], axis = 1)
+  df_final = removendo_dados.rename(columns = {'index' : cluster})
+  return df_final
+# %%
+df_usuario = ordenador_cluster('RecenciaCluster', 'Recencia', df_usuario)
